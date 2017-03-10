@@ -4,7 +4,7 @@ import random
 import sys
 from keras.models import Sequential
 from keras.layers import Dropout
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
 
@@ -18,7 +18,7 @@ class CharRNN:
 
     # model params
     neuron_layers = [128, 128, 128]
-    dropout_layers = [0.3, 0.3]
+    dropout_layers = [0.5, 0.5]
 
     def __init__(self, file_):
         raw_text = open(file_, encoding="utf-8").read()
@@ -33,14 +33,6 @@ class CharRNN:
         self.epoch = 0
         self.X, self.y = None, None
 
-    @staticmethod
-    def char_to_int(chars):
-        return dict((c, i) for i, c in enumerate(chars))
-
-    @staticmethod
-    def int_to_char(chars):
-        return dict((i, c) for i, c in enumerate(chars))
-
     def get_sentences(self):
         self.sentences = []
         self.next_chars = []
@@ -49,7 +41,8 @@ class CharRNN:
             self.next_chars.append(self.raw_text_ru[i + self.MAXLEN])
         print(len(self.sentences))
         # self.sentences = self.sentences[:680000]
-        self.sentences = self.sentences[:1360000]
+        # self.sentences = self.sentences[:1360000]
+        self.sentences = self.sentences[:400000]
         print(len(self.sentences))
 
     @staticmethod
@@ -76,9 +69,9 @@ class CharRNN:
         self.model.add(LSTM(self.neuron_layers[0], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
                             return_sequences=True))
         self.model.add(Dropout(self.dropout_layers[0]))
-        self.model.add(LSTM(self.neuron_layers[1], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                            return_sequences=True))
-        self.model.add(Dropout(self.dropout_layers[1]))
+        # self.model.add(LSTM(self.neuron_layers[1], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
+        #                     return_sequences=True))
+        # self.model.add(Dropout(self.dropout_layers[1]))
         self.model.add(LSTM(self.neuron_layers[2], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
                             return_sequences=False))
         self.model.add(Dense(output_dim=len(self.chars)))
@@ -90,24 +83,28 @@ class CharRNN:
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
         return self.model
 
-    def train_model(self, epoch=0):
-        if epoch:
-            self.epoch = epoch
+    def train_model(self, from_epoch=0):
+        if from_epoch:
+            self.epoch = from_epoch
 
         for iteration in range(0, 10000):
             filepath = "models/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % (iteration + self.epoch)
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
-            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=3, min_lr=0.0001)
+            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.0001)
+            # tensor_board = TensorBoard(log_dir='/home/kustikov/_soft/tutorials/char_rnn/tensorboard_log',
+            #                            histogram_freq=1)
 
             print("==============================================================")
             print("Epoch: ", self.epoch)
-            self.model.fit(self.X, self.y, batch_size=self.BATCH_SIZE, nb_epoch=1, callbacks=[checkpoint, reduce_lr],
+            self.model.fit(self.X, self.y, batch_size=self.BATCH_SIZE, nb_epoch=1,
+                           callbacks=[checkpoint, reduce_lr],
                            shuffle=False,
-                           validation_split=0.1)
+                           validation_split=0.1,
+                           verbose=1)
 
-    def get_sample(self):
+    def get_sample(self, temperatures):  # [0.2, 0.5, 1.0]
         start_index = random.randint(0, len(self.raw_text_ru) - self.MAXLEN - 1)
-        for T in [0.2, 0.5, 1.0]:
+        for T in temperatures:
             print("------------Temperature", T)
             generated = ''
             sentence = self.raw_text_ru[start_index:start_index + self.MAXLEN]
@@ -138,8 +135,8 @@ class CharRNN:
 rnn_trainer = CharRNN('data/war_and_peace.txt')
 rnn_trainer.get_sentences()
 rnn_trainer.vectorization()
-rnn_trainer.build_model()
+rnn_trainer.build_model(previous_save=None)
 print(rnn_trainer.model.summary())
-rnn_trainer.train_model()
+rnn_trainer.train_model(from_epoch=0)
 
 
