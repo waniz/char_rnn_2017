@@ -13,7 +13,7 @@ class CharRNN:
 
     # global params
     MAXLEN = 40
-    STEP = 2
+    STEP = 1
     BATCH_SIZE = 100
 
     # model params
@@ -48,8 +48,8 @@ class CharRNN:
             self.sentences.append(self.raw_text_ru[i: i + self.MAXLEN])
             self.next_chars.append(self.raw_text_ru[i + self.MAXLEN])
         print(len(self.sentences))
-        self.sentences = self.sentences[:680000]
-        self.sentences = self.sentences[:1000]
+        # self.sentences = self.sentences[:680000]
+        self.sentences = self.sentences[:1360000]
         print(len(self.sentences))
 
     @staticmethod
@@ -78,6 +78,7 @@ class CharRNN:
         self.model.add(Dropout(self.dropout_layers[0]))
         self.model.add(LSTM(self.neuron_layers[1], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
                             return_sequences=True))
+        self.model.add(Dropout(self.dropout_layers[1]))
         self.model.add(LSTM(self.neuron_layers[2], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
                             return_sequences=False))
         self.model.add(Dense(output_dim=len(self.chars)))
@@ -101,7 +102,7 @@ class CharRNN:
             print("==============================================================")
             print("Epoch: ", self.epoch)
             self.model.fit(self.X, self.y, batch_size=self.BATCH_SIZE, nb_epoch=1, callbacks=[checkpoint, reduce_lr],
-                           shuffle=True,
+                           shuffle=False,
                            validation_split=0.1)
 
     def get_sample(self):
