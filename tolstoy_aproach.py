@@ -12,12 +12,12 @@ from keras.layers import LSTM
 class CharRNN:
 
     # global params
-    MAXLEN = 40
+    MAXLEN = 16
     STEP = 1
-    BATCH_SIZE = 100
+    BATCH_SIZE = 1000
 
     # model params
-    neuron_layers = [128, 128, 128]
+    neuron_layers = [256, 512, 512]
     dropout_layers = [0.5, 0.5]
 
     def __init__(self, file_):
@@ -42,7 +42,8 @@ class CharRNN:
         print(len(self.sentences))
         # self.sentences = self.sentences[:680000]
         # self.sentences = self.sentences[:1360000]
-        self.sentences = self.sentences[:400000]
+        # self.sentences = self.sentences[:400000]
+        self.sentences = self.sentences[:9000000]
         print(len(self.sentences))
 
     @staticmethod
@@ -69,11 +70,12 @@ class CharRNN:
         self.model.add(LSTM(self.neuron_layers[0], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
                             return_sequences=True))
         self.model.add(Dropout(self.dropout_layers[0]))
-        # self.model.add(LSTM(self.neuron_layers[1], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-        #                     return_sequences=True))
-        # self.model.add(Dropout(self.dropout_layers[1]))
+        self.model.add(LSTM(self.neuron_layers[1], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
+                            return_sequences=True))
+        self.model.add(Dropout(self.dropout_layers[1]))
         self.model.add(LSTM(self.neuron_layers[2], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
                             return_sequences=False))
+        self.model.add(Dense(256))
         self.model.add(Dense(output_dim=len(self.chars)))
         self.model.add(Activation('softmax'))
 
@@ -81,6 +83,11 @@ class CharRNN:
             self.model.load_weights(previous_save)
 
         self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+        model_json = self.model.to_json()
+        with open('models/current_model.json', 'w') as json_file:
+            json_file.write(model_json)
+
         return self.model
 
     def train_model(self, from_epoch=0):
@@ -96,43 +103,16 @@ class CharRNN:
 
             print("==============================================================")
             print("Epoch: ", self.epoch)
+
             self.model.fit(self.X, self.y, batch_size=self.BATCH_SIZE, nb_epoch=1,
                            callbacks=[checkpoint, reduce_lr],
                            shuffle=False,
                            validation_split=0.1,
                            verbose=1)
 
-    def get_sample(self, temperatures):  # [0.2, 0.5, 1.0]
-        start_index = random.randint(0, len(self.raw_text_ru) - self.MAXLEN - 1)
-        for T in temperatures:
-            print("------------Temperature", T)
-            generated = ''
-            sentence = self.raw_text_ru[start_index:start_index + self.MAXLEN]
-            generated += sentence
-            print("Generating with seed: " + sentence)
-            print('')
 
-            for i in range(400):
-                char_to_int = dict((c, i) for i, c in enumerate(self.chars))
-                int_to_char = dict((c, i) for i, c in enumerate(self.chars))
-
-                seed = np.zeros((self.BATCH_SIZE, self.MAXLEN, len(self.chars)))
-                for t, char in enumerate(sentence):
-                    seed[0, t, char_to_int[char]] = 1
-
-                predictions = self.model.predict(seed, batch_size=self.BATCH_SIZE, verbose=2)[0]
-                next_index = self.sample(predictions, T)
-                next_char = int_to_char[next_index]
-
-                sys.stdout.write(next_char)
-                sys.stdout.flush()
-
-                generated += next_char
-                sentence = sentence[1:] + next_char
-            print()
-
-
-rnn_trainer = CharRNN('data/war_and_peace.txt')
+# rnn_trainer = CharRNN('data/war_and_peace.txt')
+rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt')
 rnn_trainer.get_sentences()
 rnn_trainer.vectorization()
 rnn_trainer.build_model(previous_save=None)
