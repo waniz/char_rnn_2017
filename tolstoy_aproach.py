@@ -1,12 +1,10 @@
 import numpy as np
 import re
-import random
-import sys
+
 from keras.models import Sequential
-from keras.layers import Dropout
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, TensorBoard
-from keras.layers import Dense, Activation
-from keras.layers import LSTM
+from keras.layers import Activation, Dropout, Dense, LSTM
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras.regularizers import l2
 
 
 class CharRNN:
@@ -17,14 +15,14 @@ class CharRNN:
     BATCH_SIZE = 1000
 
     VALIDATION_SPLIT_GEN = 0.9
-    SIMPLE_TRAIN = False
+    GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [64, 64, 64]
-    dropout_layers = [0.4, 0.4]
-    dense_layers = [64]
+    neuron_layers = [512, 512, 512]
+    dropout_layers = [0.5, 0.5]
+    dense_layers = [256]
 
-    def __init__(self, file_, training_type=False):
+    def __init__(self, file_, generator_training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
         raw_text = raw_text.lower()
         self.raw_text_ru = re.sub("[^а-я, .]", "", raw_text)
@@ -46,7 +44,10 @@ class CharRNN:
         print('Corpus train length: ', len(self.raw_text_ru))
         print('Corpus val length  : ', len(self.validation_set))
 
-        self.SIMPLE_TRAIN = training_type
+        self.GENERATOR_TRAINING = generator_training_type
+
+        # self.raw_text_ru = self.raw_text_ru[:10021]
+        # self.validation_set = self.validation_set[:1000]
 
     def get_sentences(self):
         self.sentences = []
@@ -81,13 +82,21 @@ class CharRNN:
 
     def build_model(self, previous_save=None):
         self.model.add(LSTM(self.neuron_layers[0], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                            return_sequences=True))
+                            W_regularizer=l2(0.01), return_sequences=True))
         self.model.add(Dropout(self.dropout_layers[0]))
-        self.model.add(LSTM(self.neuron_layers[1], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                            return_sequences=True))
-        self.model.add(Dropout(self.dropout_layers[1]))
-        self.model.add(LSTM(self.neuron_layers[2], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
+
+        if self.neuron_layers[1]:
+            self.model.add(LSTM(self.neuron_layers[1],
+                                batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
+                                W_regularizer=l2(0.01),
+                                return_sequences=True))
+            self.model.add(Dropout(self.dropout_layers[1]))
+
+        self.model.add(LSTM(self.neuron_layers[2],
+                            batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
+                            W_regularizer=l2(0.01),
                             return_sequences=False))
+
         self.model.add(Dense(self.dense_layers[0]))
         self.model.add(Dense(output_dim=len(self.chars)))
         self.model.add(Activation('softmax'))
@@ -181,7 +190,7 @@ class CharRNN:
 
             filepath = "models/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % epoch
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
-            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.0001)
+            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=1, min_lr=0.0001)
 
             hist = self.model.fit_generator(train_generator, validation_data=val_gen,
                                             nb_val_samples=val_samples,
@@ -200,9 +209,9 @@ class CharRNN:
             print('done fitting epoch %s' % epoch)
 
 
-rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', training_type=True)
+rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
 
-if rnn_trainer.SIMPLE_TRAIN:
+if rnn_trainer.GENERATOR_TRAINING:
     rnn_trainer.build_model(previous_save=None)
     print(rnn_trainer.model.summary())
     rnn_trainer.train_model_generator(from_epoch=0)

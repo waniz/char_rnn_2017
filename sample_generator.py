@@ -7,7 +7,8 @@ from keras.models import model_from_json, Sequential
 MAXLEN = 16
 STEP = 1
 BATCH_SIZE = 1000
-CHARS = 39
+CHARS = 35
+
 
 def sample(a, temperature=1.0):
     a = np.log(a) / temperature
