@@ -10,7 +10,7 @@ from keras.regularizers import l2
 class CharRNN:
 
     # global params
-    MAXLEN = 16
+    MAXLEN = 20
     STEP = 1
     BATCH_SIZE = 1000
 
@@ -18,9 +18,9 @@ class CharRNN:
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [512, 512, 512]
-    dropout_layers = [0.5, 0.5]
-    dense_layers = [256]
+    neuron_layers = [128, None, 128]
+    dropout_layers = [0.2, 0.2]
+    dense_layers = [64]
 
     def __init__(self, file_, generator_training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
@@ -57,7 +57,7 @@ class CharRNN:
             self.next_chars.append(self.raw_text_ru[i + self.MAXLEN])
         print('Corpus length: ', len(self.sentences))
 
-        self.sentences = self.sentences[:9000000]
+        self.sentences = self.sentences[:400000]
         print(len(self.sentences))
 
     @staticmethod
@@ -81,20 +81,22 @@ class CharRNN:
             self.y[i, char_to_int[self.next_chars[i]]] = 1
 
     def build_model(self, previous_save=None):
-        self.model.add(LSTM(self.neuron_layers[0], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                            W_regularizer=l2(0.01), return_sequences=True))
+        self.model.add(LSTM(self.neuron_layers[0],
+                            batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
+                            # W_regularizer=l2(0.0001),
+                            return_sequences=True))
         self.model.add(Dropout(self.dropout_layers[0]))
 
         if self.neuron_layers[1]:
             self.model.add(LSTM(self.neuron_layers[1],
                                 batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                                W_regularizer=l2(0.01),
+                                # W_regularizer=l2(0.01),
                                 return_sequences=True))
             self.model.add(Dropout(self.dropout_layers[1]))
 
         self.model.add(LSTM(self.neuron_layers[2],
                             batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                            W_regularizer=l2(0.01),
+                            # W_regularizer=l2(0.01),
                             return_sequences=False))
 
         self.model.add(Dense(self.dense_layers[0]))
