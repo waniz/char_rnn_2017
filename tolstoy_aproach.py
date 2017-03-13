@@ -16,14 +16,18 @@ class CharRNN:
     STEP = 1
     BATCH_SIZE = 1000
 
-    # model params
-    neuron_layers = [256, 512, 512]
-    dropout_layers = [0.5, 0.5]
+    VALIDATION_SPLIT_GEN = 0.9
+    SIMPLE_TRAIN = False
 
-    def __init__(self, file_):
+    # model params
+    neuron_layers = [64, 64, 64]
+    dropout_layers = [0.4, 0.4]
+    dense_layers = [64]
+
+    def __init__(self, file_, training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
         raw_text = raw_text.lower()
-        self.raw_text_ru = re.sub("[^а-я,\n .:!?-]", "", raw_text)
+        self.raw_text_ru = re.sub("[^а-я, .]", "", raw_text)
         self.chars = sorted(list(set(self.raw_text_ru)))
         self.n_chars = len(raw_text)
         self.n_vocab = len(self.chars)
@@ -33,16 +37,25 @@ class CharRNN:
         self.epoch = 0
         self.X, self.y = None, None
 
+        self.validation_set = self.raw_text_ru[int(len(self.raw_text_ru) * self.VALIDATION_SPLIT_GEN):]
+        self.raw_text_ru = self.raw_text_ru[:int(len(self.raw_text_ru) * self.VALIDATION_SPLIT_GEN)]
+
+        with open('data/Lev_Tolstoy_val.txt', 'w') as file:
+            file.write(self.validation_set)
+
+        print('Corpus train length: ', len(self.raw_text_ru))
+        print('Corpus val length  : ', len(self.validation_set))
+
+        self.SIMPLE_TRAIN = training_type
+
     def get_sentences(self):
         self.sentences = []
         self.next_chars = []
         for i in range(0, len(self.raw_text_ru) - self.MAXLEN, self.STEP):
             self.sentences.append(self.raw_text_ru[i: i + self.MAXLEN])
             self.next_chars.append(self.raw_text_ru[i + self.MAXLEN])
-        print(len(self.sentences))
-        # self.sentences = self.sentences[:680000]
-        # self.sentences = self.sentences[:1360000]
-        # self.sentences = self.sentences[:400000]
+        print('Corpus length: ', len(self.sentences))
+
         self.sentences = self.sentences[:9000000]
         print(len(self.sentences))
 
@@ -75,7 +88,7 @@ class CharRNN:
         self.model.add(Dropout(self.dropout_layers[1]))
         self.model.add(LSTM(self.neuron_layers[2], batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
                             return_sequences=False))
-        self.model.add(Dense(256))
+        self.model.add(Dense(self.dense_layers[0]))
         self.model.add(Dense(output_dim=len(self.chars)))
         self.model.add(Activation('softmax'))
 
@@ -98,8 +111,6 @@ class CharRNN:
             filepath = "models/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % (iteration + self.epoch)
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.0001)
-            # tensor_board = TensorBoard(log_dir='/home/kustikov/_soft/tutorials/char_rnn/tensorboard_log',
-            #                            histogram_freq=1)
 
             print("==============================================================")
             print("Epoch: ", self.epoch)
@@ -110,13 +121,97 @@ class CharRNN:
                            validation_split=0.1,
                            verbose=1)
 
+    """ helpers for train model with fit_generator """
 
-# rnn_trainer = CharRNN('data/war_and_peace.txt')
-rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt')
-rnn_trainer.get_sentences()
-rnn_trainer.vectorization()
-rnn_trainer.build_model(previous_save=None)
-print(rnn_trainer.model.summary())
-rnn_trainer.train_model(from_epoch=0)
+    def generate_text_slices_val(self):
+        text = self.validation_set
+        yield len(text), text[:self.MAXLEN]
+
+        while True:
+            for i in range(0, len(text) - self.MAXLEN, self.STEP):
+                sentence = text[i: i + self.MAXLEN]
+                next_char = text[i + self.MAXLEN]
+                yield sentence, next_char
+
+    def generate_text_slices(self):
+        text = self.raw_text_ru
+        yield len(text), text[:self.MAXLEN]
+
+        while True:
+            for i in range(0, len(text) - self.MAXLEN, self.STEP):
+                sentence = text[i: i + self.MAXLEN]
+                next_char = text[i + self.MAXLEN]
+                yield sentence, next_char
+
+    def generate_arrays_from_data(self, train=True):
+        char_to_int = dict((c, i) for i, c in enumerate(self.chars))
+
+        if train:
+            slices = self.generate_text_slices()
+        else:
+            slices = self.generate_text_slices_val()
+
+        text_len, seed = next(slices)
+        samples = (text_len - self.MAXLEN + self.STEP - 1) / self.STEP
+        yield samples, seed
+
+        while True:
+            X = np.zeros((self.BATCH_SIZE, self.MAXLEN, len(self.chars)), dtype=np.bool)
+            y = np.zeros((self.BATCH_SIZE, len(self.chars)), dtype=np.bool)
+            for i in range(self.BATCH_SIZE):
+                sentence, next_char = next(slices)
+                for t, char in enumerate(sentence):
+                    X[i, t, char_to_int[char]] = 1
+                y[i, char_to_int[next_char]] = 1
+            yield X, y
+
+    """ helpers for train model with fit_generator """
+
+    def train_model_generator(self, from_epoch=0):
+        train_generator = self.generate_arrays_from_data(train=True)
+        samples, seed = next(train_generator)
+        print('samples per epoch %s' % samples)
+        last_epoch = from_epoch
+
+        self.model.metadata = {'epoch': 0, 'loss': [], 'val_loss': []}
+
+        for epoch in range(last_epoch + 1, last_epoch + 10000):
+            val_gen = self.generate_arrays_from_data(train=False)
+            val_samples, _ = next(val_gen)
+
+            filepath = "models/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % epoch
+            checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
+            reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.0001)
+
+            hist = self.model.fit_generator(train_generator, validation_data=val_gen,
+                                            nb_val_samples=val_samples,
+                                            samples_per_epoch=samples,
+                                            nb_epoch=1,
+                                            callbacks=[checkpoint, reduce_lr], verbose=1)
+
+            val_loss = hist.history.get('val_loss', [-1])[0]
+            loss = hist.history['loss'][0]
+            self.model.metadata['loss'].append(loss)
+            self.model.metadata['val_loss'].append(val_loss)
+            self.model.metadata['epoch'] = epoch
+
+            message = 'loss = %.4f   val_loss = %.4f' % (loss, val_loss)
+            print(message)
+            print('done fitting epoch %s' % epoch)
+
+
+rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', training_type=True)
+
+if rnn_trainer.SIMPLE_TRAIN:
+    rnn_trainer.build_model(previous_save=None)
+    print(rnn_trainer.model.summary())
+    rnn_trainer.train_model_generator(from_epoch=0)
+else:
+    rnn_trainer.get_sentences()
+    rnn_trainer.vectorization()
+    rnn_trainer.build_model(previous_save=None)
+    print(rnn_trainer.model.summary())
+    rnn_trainer.train_model(from_epoch=0)
+
 
 
