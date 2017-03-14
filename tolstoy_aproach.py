@@ -18,9 +18,9 @@ class CharRNN:
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [128, None, 128]
-    dropout_layers = [0.2, 0.2]
-    dense_layers = [64]
+    neuron_layers = [512, 512, 512]
+    dropout_layers = [0.4, 0.4]
+    dense_layers = [256]
 
     def __init__(self, file_, generator_training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
@@ -56,9 +56,9 @@ class CharRNN:
             self.sentences.append(self.raw_text_ru[i: i + self.MAXLEN])
             self.next_chars.append(self.raw_text_ru[i + self.MAXLEN])
         print('Corpus length: ', len(self.sentences))
-
-        self.sentences = self.sentences[:400000]
-        print(len(self.sentences))
+        #
+        # self.sentences = self.sentences[:400000]
+        # print(len(self.sentences))
 
     @staticmethod
     def sample(a, temperature=1.0):
@@ -195,6 +195,7 @@ class CharRNN:
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=1, min_lr=0.0001)
 
+<<<<<<< HEAD
             self.model.fit_generator(train_generator,
                                      validation_data=val_gen,
                                      nb_val_samples=val_samples,
@@ -202,6 +203,13 @@ class CharRNN:
                                      nb_epoch=1,
                                      callbacks=[checkpoint, reduce_lr], verbose=1,
                                      max_q_size=100, nb_worker=4, pickle_safe=True)
+=======
+            hist = self.model.fit_generator(train_generator, validation_data=val_gen,
+                                            nb_val_samples=val_samples,
+                                            samples_per_epoch=samples,
+                                            nb_epoch=1,
+                                            callbacks=[checkpoint, reduce_lr], verbose=1)
+>>>>>>> 58ab3d9fa5b27289633bfe54c9fd7c19d91437be
 
 
 rnn_trainer = CharRNN('data/war_and_peace.txt', generator_training_type=False)
