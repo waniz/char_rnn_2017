@@ -4,7 +4,6 @@ import re
 from keras.models import Sequential
 from keras.layers import Activation, Dropout, Dense, LSTM
 from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
-from keras.regularizers import l2
 
 
 class CharRNN:
@@ -83,20 +82,17 @@ class CharRNN:
     def build_model(self, previous_save=None):
         self.model.add(LSTM(self.neuron_layers[0],
                             batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                            # W_regularizer=l2(0.0001),
                             return_sequences=True))
         self.model.add(Dropout(self.dropout_layers[0]))
 
         if self.neuron_layers[1]:
             self.model.add(LSTM(self.neuron_layers[1],
                                 batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                                # W_regularizer=l2(0.01),
                                 return_sequences=True))
             self.model.add(Dropout(self.dropout_layers[1]))
 
         self.model.add(LSTM(self.neuron_layers[2],
                             batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.chars)),
-                            # W_regularizer=l2(0.01),
                             return_sequences=False))
 
         self.model.add(Dense(self.dense_layers[0]))
@@ -195,24 +191,14 @@ class CharRNN:
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=1, min_lr=0.0001)
 
-<<<<<<< HEAD
-            self.model.fit_generator(train_generator,
-                                     validation_data=val_gen,
+            self.model.fit_generator(train_generator, validation_data=val_gen,
                                      nb_val_samples=val_samples,
                                      samples_per_epoch=samples,
                                      nb_epoch=1,
-                                     callbacks=[checkpoint, reduce_lr], verbose=1,
-                                     max_q_size=100, nb_worker=4, pickle_safe=True)
-=======
-            hist = self.model.fit_generator(train_generator, validation_data=val_gen,
-                                            nb_val_samples=val_samples,
-                                            samples_per_epoch=samples,
-                                            nb_epoch=1,
-                                            callbacks=[checkpoint, reduce_lr], verbose=1)
->>>>>>> 58ab3d9fa5b27289633bfe54c9fd7c19d91437be
+                                     callbacks=[checkpoint, reduce_lr], verbose=1)
 
 
-rnn_trainer = CharRNN('data/war_and_peace.txt', generator_training_type=False)
+rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
     rnn_trainer.build_model(previous_save=None)
