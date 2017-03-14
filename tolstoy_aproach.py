@@ -3,7 +3,21 @@ import re
 
 from keras.models import Sequential
 from keras.layers import Activation, Dropout, Dense, LSTM
-from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau
+from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, Callback
+from keras.optimizers import RMSprop
+
+
+class NBatchLogger(Callback):
+    def __init__(self, display):
+        self.seen = 0
+        self.display = display
+
+    def on_batch_end(self, batch, logs={}):
+        self.seen += logs.get('size', 0)
+        if self.seen % self.display == 0:
+            # you can access loss, accuracy in self.params['metrics']
+            # print('\n{}/{} - loss ....\n'.format(self.seen, self.params['nb_sample']))
+            print('\n Batch Loss: {0}'.format(self.params['metrics']))
 
 
 class CharRNN:
@@ -17,9 +31,9 @@ class CharRNN:
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [512, 512, 512]
-    dropout_layers = [0.4, 0.4]
-    dense_layers = [256]
+    neuron_layers = [128, 128, 128]
+    dropout_layers = [0.2, 0.2]
+    dense_layers = [128]
 
     def __init__(self, file_, generator_training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
@@ -45,8 +59,8 @@ class CharRNN:
 
         self.GENERATOR_TRAINING = generator_training_type
 
-        # self.raw_text_ru = self.raw_text_ru[:10021]
-        # self.validation_set = self.validation_set[:1000]
+        self.raw_text_ru = self.raw_text_ru[:200000 + self.MAXLEN]
+        self.validation_set = self.validation_set[:50000 + self.MAXLEN]
 
     def get_sentences(self):
         self.sentences = []
@@ -102,7 +116,8 @@ class CharRNN:
         if previous_save:
             self.model.load_weights(previous_save)
 
-        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+        rmsprop = RMSprop(lr=0.002, decay=0.05)
+        self.model.compile(loss='categorical_crossentropy', optimizer=rmsprop)
 
         model_json = self.model.to_json()
         with open('models/current_model.json', 'w') as json_file:
@@ -118,6 +133,7 @@ class CharRNN:
             filepath = "models/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % (iteration + self.epoch)
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.0001)
+            logger_ = NBatchLogger(display=1000)
 
             print("==============================================================")
             print("Epoch: ", self.epoch)
@@ -198,7 +214,7 @@ class CharRNN:
                                      callbacks=[checkpoint, reduce_lr], verbose=1)
 
 
-rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
+rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=False)
 
 if rnn_trainer.GENERATOR_TRAINING:
     rnn_trainer.build_model(previous_save=None)
