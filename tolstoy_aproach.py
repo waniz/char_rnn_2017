@@ -155,6 +155,7 @@ class CharRNN:
                 yield sentence, next_char
 
     def generate_arrays_from_data(self, train=True):
+
         char_to_int = dict((c, i) for i, c in enumerate(self.chars))
 
         if train:
@@ -194,24 +195,16 @@ class CharRNN:
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=1, min_lr=0.0001)
 
-            hist = self.model.fit_generator(train_generator, validation_data=val_gen,
-                                            nb_val_samples=val_samples,
-                                            samples_per_epoch=samples,
-                                            nb_epoch=1,
-                                            callbacks=[checkpoint, reduce_lr], verbose=1)
-
-            val_loss = hist.history.get('val_loss', [-1])[0]
-            loss = hist.history['loss'][0]
-            self.model.metadata['loss'].append(loss)
-            self.model.metadata['val_loss'].append(val_loss)
-            self.model.metadata['epoch'] = epoch
-
-            message = 'loss = %.4f   val_loss = %.4f' % (loss, val_loss)
-            print(message)
-            print('done fitting epoch %s' % epoch)
+            self.model.fit_generator(train_generator,
+                                     validation_data=val_gen,
+                                     nb_val_samples=val_samples,
+                                     samples_per_epoch=samples,
+                                     nb_epoch=1,
+                                     callbacks=[checkpoint, reduce_lr], verbose=1,
+                                     max_q_size=100, nb_worker=4, pickle_safe=True)
 
 
-rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
+rnn_trainer = CharRNN('data/war_and_peace.txt', generator_training_type=False)
 
 if rnn_trainer.GENERATOR_TRAINING:
     rnn_trainer.build_model(previous_save=None)
