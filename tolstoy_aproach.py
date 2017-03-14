@@ -25,13 +25,13 @@ class CharRNN:
     # global params
     MAXLEN = 20
     STEP = 1
-    BATCH_SIZE = 1000
+    BATCH_SIZE = 100
 
     VALIDATION_SPLIT_GEN = 0.9
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [128, 128, 128]
+    neuron_layers = [128, None, 128]
     dropout_layers = [0.2, 0.2]
     dense_layers = [128]
 
@@ -59,8 +59,8 @@ class CharRNN:
 
         self.GENERATOR_TRAINING = generator_training_type
 
-        self.raw_text_ru = self.raw_text_ru[:200000 + self.MAXLEN]
-        self.validation_set = self.validation_set[:50000 + self.MAXLEN]
+        self.raw_text_ru = self.raw_text_ru[:500000 + self.MAXLEN]
+        self.validation_set = self.validation_set[:460000 + self.MAXLEN]
 
     def get_sentences(self):
         self.sentences = []
@@ -133,7 +133,7 @@ class CharRNN:
             filepath = "models/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % (iteration + self.epoch)
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.0001)
-            logger_ = NBatchLogger(display=1000)
+            # logger_ = NBatchLogger(display=1000)
 
             print("==============================================================")
             print("Epoch: ", self.epoch)

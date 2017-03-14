@@ -1,13 +1,13 @@
 import numpy as np
 import random
+import re
 import sys
 from keras.models import model_from_json, Sequential
 
 # global params
-MAXLEN = 16
+MAXLEN = 20
 STEP = 1
 BATCH_SIZE = 1000
-CHARS = 35
 
 
 def sample(a, temperature=1.0):
@@ -21,6 +21,11 @@ def sample(a, temperature=1.0):
 
 
 def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
+    raw_text = open('data/Lev_Tolstoy_all.txt', encoding="utf-8").read()
+    raw_text = raw_text.lower()
+    raw_text_ru = re.sub("[^а-я, .]", "", raw_text)
+    chars = sorted(list(set(raw_text_ru)))
+
     for T in temperatures:
         print("------------Temperature", T)
         generated = ''
@@ -30,10 +35,10 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
         print('')
 
         for i in range(400):
-            char_to_int = dict((c, i) for i, c in enumerate(CHARS))
-            int_to_char = dict((c, i) for i, c in enumerate(CHARS))
+            char_to_int = dict((c, i) for i, c in enumerate(chars))
+            int_to_char = dict((c, i) for i, c in enumerate(chars))
 
-            seed = np.zeros((BATCH_SIZE, MAXLEN, len(CHARS)))
+            seed = np.zeros((BATCH_SIZE, MAXLEN, len(chars)))
             for t, char in enumerate(sentence):
                 seed[0, t, char_to_int[char]] = 1
 
@@ -49,12 +54,16 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
         print()
 
 
-json_file = open('models/current_model.json', 'r')
+json_file = open(
+    'models/current_model.json', 'r')
 loaded_model_json = json_file.read()
 json_file.close()
 trained_model = model_from_json(loaded_model_json)
-trained_model.load_weights('models/weights_ep_3_loss_1.254_val_loss_1.267.h5')
+trained_model.load_weights(
+    'models/weights_ep_0_loss_3.092_val_loss_3.083.hdf5')
 trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+get_sample(trained_model, [0.1, 0.2])
 
 
 
