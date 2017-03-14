@@ -18,9 +18,9 @@ class CharRNN:
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [128, None, 128]
-    dropout_layers = [0.2, 0.2]
-    dense_layers = [64]
+    neuron_layers = [512, 512, 512]
+    dropout_layers = [0.4, 0.4]
+    dense_layers = [256]
 
     def __init__(self, file_, generator_training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
@@ -56,9 +56,9 @@ class CharRNN:
             self.sentences.append(self.raw_text_ru[i: i + self.MAXLEN])
             self.next_chars.append(self.raw_text_ru[i + self.MAXLEN])
         print('Corpus length: ', len(self.sentences))
-
-        self.sentences = self.sentences[:400000]
-        print(len(self.sentences))
+        #
+        # self.sentences = self.sentences[:400000]
+        # print(len(self.sentences))
 
     @staticmethod
     def sample(a, temperature=1.0):
@@ -199,16 +199,6 @@ class CharRNN:
                                             samples_per_epoch=samples,
                                             nb_epoch=1,
                                             callbacks=[checkpoint, reduce_lr], verbose=1)
-
-            val_loss = hist.history.get('val_loss', [-1])[0]
-            loss = hist.history['loss'][0]
-            self.model.metadata['loss'].append(loss)
-            self.model.metadata['val_loss'].append(val_loss)
-            self.model.metadata['epoch'] = epoch
-
-            message = 'loss = %.4f   val_loss = %.4f' % (loss, val_loss)
-            print(message)
-            print('done fitting epoch %s' % epoch)
 
 
 rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
