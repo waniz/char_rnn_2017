@@ -31,7 +31,8 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
     for T in temperatures:
         print("------------Temperature", T)
         generated = ''
-        sentence = 'и дело не в исполнен'
+        # sentence = 'и дело не в исполнен'
+        sentence = 'полковой командир, п'
         generated += sentence
         print("Generating with seed: " + sentence)
         print('')
@@ -66,7 +67,7 @@ trained_model.load_weights(
     path + 'weights_ep_19_loss_1.090_val_loss_1.245.hdf5')
 trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-get_sample(trained_model, [0.2, 0.5, 1.0, 1.2])
+get_sample(trained_model, [0.2, 0.3, 0.4, 0.5, 1.0])
 
 
 
