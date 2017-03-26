@@ -25,18 +25,20 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
     raw_text = raw_text.lower()
     raw_text_ru = re.sub("[^а-я, .]", "", raw_text)
     chars = sorted(list(set(raw_text_ru)))
+    print('Length chars', len(chars))
+    print(chars)
 
     for T in temperatures:
         print("------------Temperature", T)
         generated = ''
-        sentence = 'примерный сэмпл выглядит '
+        sentence = 'и дело не в исполнен'
         generated += sentence
         print("Generating with seed: " + sentence)
         print('')
 
-        for i in range(400):
+        for i in range(2000):
             char_to_int = dict((c, i) for i, c in enumerate(chars))
-            int_to_char = dict((c, i) for i, c in enumerate(chars))
+            int_to_char = dict((i, c) for i, c in enumerate(chars))
 
             seed = np.zeros((BATCH_SIZE, MAXLEN, len(chars)))
             for t, char in enumerate(sentence):
@@ -53,17 +55,18 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
             sentence = sentence[1:] + next_char
         print()
 
+path = 'models/'
 
 json_file = open(
-    'models/current_model.json', 'r')
+    path + 'current_model.json', 'r')
 loaded_model_json = json_file.read()
 json_file.close()
 trained_model = model_from_json(loaded_model_json)
 trained_model.load_weights(
-    'models/weights_ep_0_loss_3.092_val_loss_3.083.hdf5')
+    path + 'weights_ep_19_loss_1.090_val_loss_1.245.hdf5')
 trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-get_sample(trained_model, [0.1, 0.2])
+get_sample(trained_model, [0.2, 0.5, 1.0, 1.2])
 
 
 
