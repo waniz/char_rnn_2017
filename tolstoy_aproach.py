@@ -24,7 +24,7 @@ class CharRNN:
 
     # global params
     MAXLEN = 20
-    STEP = 1
+    STEP = 3
     BATCH_SIZE = 100
 
     VALIDATION_SPLIT_GEN = 0.9
@@ -59,8 +59,8 @@ class CharRNN:
 
         self.GENERATOR_TRAINING = generator_training_type
 
-        self.raw_text_ru = self.raw_text_ru[:500000 + self.MAXLEN]
-        self.validation_set = self.validation_set[:460000 + self.MAXLEN]
+        self.raw_text_ru = self.raw_text_ru[:2700000 + self.MAXLEN]
+        self.validation_set = self.validation_set[:600000 + self.MAXLEN]
 
     def get_sentences(self):
         self.sentences = []
