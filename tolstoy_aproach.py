@@ -8,6 +8,7 @@ from keras.optimizers import RMSprop
 
 
 class NBatchLogger(Callback):
+
     def __init__(self, display):
         self.seen = 0
         self.display = display
@@ -24,16 +25,16 @@ class CharRNN:
 
     # global params
     MAXLEN = 20
-    STEP = 3
-    BATCH_SIZE = 100
+    STEP = 1
+    BATCH_SIZE = 1000
 
     VALIDATION_SPLIT_GEN = 0.9
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [128, None, 128]
+    neuron_layers = [512, 512, 512]
     dropout_layers = [0.2, 0.2]
-    dense_layers = [128]
+    dense_layers = [320]
 
     def __init__(self, file_, generator_training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
@@ -58,9 +59,6 @@ class CharRNN:
         print('Corpus val length  : ', len(self.validation_set))
 
         self.GENERATOR_TRAINING = generator_training_type
-
-        self.raw_text_ru = self.raw_text_ru[:2700000 + self.MAXLEN]
-        self.validation_set = self.validation_set[:600000 + self.MAXLEN]
 
     def get_sentences(self):
         self.sentences = []
@@ -116,8 +114,8 @@ class CharRNN:
         if previous_save:
             self.model.load_weights(previous_save)
 
-        rmsprop = RMSprop(lr=0.002, decay=0.05)
-        self.model.compile(loss='categorical_crossentropy', optimizer=rmsprop)
+        # rmsprop = RMSprop(decay=0.05)
+        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
         model_json = self.model.to_json()
         with open('models/current_model.json', 'w') as json_file:
@@ -210,22 +208,22 @@ class CharRNN:
             self.model.fit_generator(train_generator, validation_data=val_gen,
                                      nb_val_samples=val_samples,
                                      samples_per_epoch=samples,
-                                     nb_epoch=1,
+                                     nb_epoch=1, max_q_size=10,
                                      callbacks=[checkpoint, reduce_lr], verbose=1)
 
 
-rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=False)
+rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
-    rnn_trainer.build_model(previous_save=None)
+    rnn_trainer.build_model(previous_save='models/weights_ep_17_loss_1.096_val_loss_1.257.hdf5')
     print(rnn_trainer.model.summary())
-    rnn_trainer.train_model_generator(from_epoch=0)
+    rnn_trainer.train_model_generator(from_epoch=17)
 else:
     rnn_trainer.get_sentences()
     rnn_trainer.vectorization()
     rnn_trainer.build_model(previous_save=None)
     print(rnn_trainer.model.summary())
-    rnn_trainer.train_model(from_epoch=0)
+    rnn_trainer.train_model(from_epoch=10)
 
 
 
