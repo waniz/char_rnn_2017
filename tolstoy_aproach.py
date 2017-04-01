@@ -60,9 +60,6 @@ class CharRNN:
 
         self.GENERATOR_TRAINING = generator_training_type
 
-        # self.raw_text_ru = self.raw_text_ru[:500000 + self.MAXLEN]
-        # self.validation_set = self.validation_set[:460000 + self.MAXLEN]
-
     def get_sentences(self):
         self.sentences = []
         self.next_chars = []
