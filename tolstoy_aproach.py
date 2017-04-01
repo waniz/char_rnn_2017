@@ -117,8 +117,8 @@ class CharRNN:
         if previous_save:
             self.model.load_weights(previous_save)
 
-        # rmsprop = RMSprop(decay=0.05)
-        self.model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+        rmsprop = RMSprop(lr=0.0001)  # lr=0.001 till 25- epochs
+        self.model.compile(loss='categorical_crossentropy', optimizer=rmsprop)
 
         model_json = self.model.to_json()
         with open('models/current_model.json', 'w') as json_file:
@@ -218,9 +218,9 @@ class CharRNN:
 rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
-    rnn_trainer.build_model(previous_save='models/weights_ep_17_loss_1.096_val_loss_1.257.hdf5')
+    rnn_trainer.build_model(previous_save='models/weights_ep_25_loss_1.077_val_loss_1.256.hdf5')
     print(rnn_trainer.model.summary())
-    rnn_trainer.train_model_generator(from_epoch=17)
+    rnn_trainer.train_model_generator(from_epoch=25)
 else:
     rnn_trainer.get_sentences()
     rnn_trainer.vectorization()
