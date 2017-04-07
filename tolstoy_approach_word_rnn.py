@@ -80,7 +80,7 @@ class CharRNN:
                             batch_input_shape=(self.BATCH_SIZE, self.MAXLEN, len(self.words)),
                             return_sequences=False))
 
-        # self.model.add(Dense(self.dense_layers[0]))
+        self.model.add(Dense(self.dense_layers[0]))
         self.model.add(Dense(output_dim=len(self.words)))
         self.model.add(Activation('softmax'))
 
