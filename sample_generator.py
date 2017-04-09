@@ -16,7 +16,7 @@ def sample(a, temperature=1.0):
     if sum(a) > 1.0:
         a *= 1 - (sum(a) - 1)
         if sum(a) > 1.0:
-            a *= 0.99999
+            a *= 0.9999
     return np.argmax(np.random.multinomial(1, a, 1))
 
 
@@ -28,16 +28,18 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
     print('Length chars', len(chars))
     print(chars)
 
+    start_index = random.randint(0, len(raw_text_ru) - MAXLEN - 1)
     for T in temperatures:
         print("------------Temperature", T)
         generated = ''
+        sentence = raw_text_ru[start_index:start_index + MAXLEN]
         # sentence = 'и право не в исполнении к'
-        sentence = 'крошечными волосками при'
+        # sentence = 'крошечными волосками при'
         generated += sentence
         print("Generating with seed: " + sentence)
         print('')
 
-        for i in range(200):
+        for i in range(1000):
             char_to_int = dict((c, i) for i, c in enumerate(chars))
             int_to_char = dict((i, c) for i, c in enumerate(chars))
 
@@ -64,10 +66,10 @@ loaded_model_json = json_file.read()
 json_file.close()
 trained_model = model_from_json(loaded_model_json)
 trained_model.load_weights(
-    path + 'weights_ep_12_loss_1.246_val_loss_1.239.hdf5')
+    path + 'weights_ep_9_loss_1.255_val_loss_1.235.hdf5')
 trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-get_sample(trained_model, [0.5, 1.0])
+get_sample(trained_model, [0.3, 0.4, 0.6, 0.8, 1.0])
 
 
 
