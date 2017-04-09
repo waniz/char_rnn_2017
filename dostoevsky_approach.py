@@ -212,9 +212,9 @@ class CharRNN:
 rnn_trainer = CharRNN('data/Dostoevsky_all.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
-    rnn_trainer.build_model(previous_save=None)
+    rnn_trainer.build_model(previous_save='models_dostoevsky/weights_ep_8_loss_1.185_val_loss_1.292.hdf5')
     print(rnn_trainer.model.summary())
-    rnn_trainer.train_model_generator(from_epoch=0)
+    rnn_trainer.train_model_generator(from_epoch=8)
 else:
     rnn_trainer.get_sentences()
     rnn_trainer.vectorization()
