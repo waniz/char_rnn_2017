@@ -5,9 +5,9 @@ import sys
 from keras.models import model_from_json, Sequential
 
 # global params
-MAXLEN = 25
+MAXLEN = 30
 STEP = 1
-BATCH_SIZE = 1000
+BATCH_SIZE = 500
 
 
 def generate_text(model, length):
@@ -41,7 +41,7 @@ def sample(a, temperature=1.0):
 
 
 def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
-    raw_text = open('data/Lev_Tolstoy_all.txt', encoding="utf-8").read()
+    raw_text = open('data/dost_best.txt', encoding="utf-8").read()
     raw_text = raw_text.lower()
     raw_text_ru = re.sub("[^а-я, .]", "", raw_text)
     chars = sorted(list(set(raw_text_ru)))
@@ -52,7 +52,9 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
     for T in temperatures:
         print("------------Temperature", T)
         generated = ''
-        sentence = raw_text_ru[start_index:start_index + MAXLEN]
+        # sentence = raw_text_ru[start_index:start_index + MAXLEN]
+        sentence = 'белая плотная шапка пены, боль'
+        # sentence = ' бормотал он в смущении, — я так и думал'
         generated += sentence
         print("Generating with seed: " + sentence)
         print('')
@@ -76,7 +78,7 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
             sentence = sentence[1:] + next_char
         print()
 
-path = 'models/'
+path = 'models_dostoevsky/'
 
 json_file = open(
     path + 'current_model.json', 'r')
@@ -84,8 +86,8 @@ loaded_model_json = json_file.read()
 json_file.close()
 trained_model = model_from_json(loaded_model_json)
 
-trained_model.load_weights(path + 'weights_ep_19_loss_1.090_val_loss_1.245.hdf5')
+trained_model.load_weights(path + 'weights_ep_12_loss_1.216_val_loss_1.316.hdf5')
 trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-# get_sample(trained_model, [0.3])
-generate_text(trained_model, 100)
+get_sample(trained_model, [0.4])
+# generate_text(trained_model, 100)

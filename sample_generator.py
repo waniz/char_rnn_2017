@@ -5,7 +5,7 @@ import sys
 from keras.models import model_from_json, Sequential
 
 # global params
-MAXLEN = 25
+MAXLEN = 20
 STEP = 1
 BATCH_SIZE = 1000
 
@@ -32,7 +32,8 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
     for T in temperatures:
         print("------------Temperature", T)
         generated = ''
-        sentence = raw_text_ru[start_index:start_index + MAXLEN]
+        # sentence = raw_text_ru[start_index:start_index + MAXLEN]
+        sentence = 'ни горечи, ни тяжест'
         generated += sentence
         print("Generating with seed: " + sentence)
         print('')
@@ -56,7 +57,7 @@ def get_sample(model, temperatures):  # [0.2, 0.5, 1.0]
             sentence = sentence[1:] + next_char
         print()
 
-path = 'models_tolstoy/'
+path = 'models_dostoevsky/'
 
 json_file = open(
     path + 'current_model.json', 'r')
@@ -64,16 +65,16 @@ loaded_model_json = json_file.read()
 json_file.close()
 trained_model = model_from_json(loaded_model_json)
 
-trained_model.load_weights(path + 'weights_ep_19_loss_1.090_val_loss_1.245.hdf5')
-trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
-
-get_sample(trained_model, [0.3])
-
-trained_model.load_weights(
-    path + 'weights_ep_9_loss_1.255_val_loss_1.235.hdf5')
+trained_model.load_weights(path + 'weights_ep_42_loss_1.196_val_loss_1.288.hdf5')
 trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
 get_sample(trained_model, [0.3, 0.4, 0.6, 0.8, 1.0])
+
+# trained_model.load_weights(
+#     path + 'weights_ep_9_loss_1.255_val_loss_1.235.hdf5')
+# trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+#
+# get_sample(trained_model, [0.3, 0.4, 0.6, 0.8, 1.0])
 
 
 

@@ -24,16 +24,16 @@ class NBatchLogger(Callback):
 class CharRNN:
 
     # global params
-    MAXLEN = 30
+    MAXLEN = 20
     STEP = 1
-    BATCH_SIZE = 500
+    BATCH_SIZE = 1000
 
     VALIDATION_SPLIT_GEN = 0.95
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [512, 768, 768]
-    dropout_layers = [0.4, 0.2]
+    neuron_layers = [400, 400, 300]
+    dropout_layers = [0.4, 0.4]
     # dense_layers = [320]
 
     def __init__(self, file_, generator_training_type=False):
@@ -209,12 +209,12 @@ class CharRNN:
                                      callbacks=[checkpoint, reduce_lr], verbose=1)
 
 
-rnn_trainer = CharRNN('data/Dostoevsky_all.txt', generator_training_type=True)
+rnn_trainer = CharRNN('data/dost_best.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
-    rnn_trainer.build_model(previous_save='models_dostoevsky/weights_ep_8_loss_1.185_val_loss_1.292.hdf5')
+    rnn_trainer.build_model(previous_save=None)
     print(rnn_trainer.model.summary())
-    rnn_trainer.train_model_generator(from_epoch=8)
+    rnn_trainer.train_model_generator(from_epoch=0)
 else:
     rnn_trainer.get_sentences()
     rnn_trainer.vectorization()
