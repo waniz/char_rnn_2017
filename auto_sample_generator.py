@@ -98,8 +98,9 @@ loaded_model_json = json_file.read()
 json_file.close()
 trained_model = model_from_json(loaded_model_json)
 
-trained_model.load_weights(path + 'weights_ep_12_loss_1.216_val_loss_1.316.hdf5')
+trained_model.load_weights(path + 'weights_ep_68_loss_1.165_val_loss_1.298.hdf5')
 trained_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
-get_sample(trained_model, [0.3, 0.4, 0.6, 0.8, 1.0])
+for i in range(1000):
+    get_sample(trained_model, [0.3, 0.4, 0.6, 0.8, 1.0])
 
