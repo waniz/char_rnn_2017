@@ -7,24 +7,10 @@ from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, Callback
 from keras.optimizers import RMSprop
 
 
-class NBatchLogger(Callback):
-
-    def __init__(self, display):
-        self.seen = 0
-        self.display = display
-
-    def on_batch_end(self, batch, logs={}):
-        self.seen += logs.get('size', 0)
-        if self.seen % self.display == 0:
-            # you can access loss, accuracy in self.params['metrics']
-            # print('\n{}/{} - loss ....\n'.format(self.seen, self.params['nb_sample']))
-            print('\n Batch Loss: {0}'.format(self.params['metrics']))
-
-
 class CharRNN:
 
     # global params
-    MAXLEN = 25
+    MAXLEN = 20
     STEP = 1
     BATCH_SIZE = 1000
 
@@ -32,14 +18,14 @@ class CharRNN:
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [256, None, 256]
-    dropout_layers = [0.25, 0.25]
+    neuron_layers = [320, 320, 320]
+    dropout_layers = [0.4, 0.4]
     # dense_layers = [320]
 
     def __init__(self, file_, generator_training_type=False):
         raw_text = open(file_, encoding="utf-8").read()
         raw_text = raw_text.lower()
-        self.raw_text_ru = re.sub("[^а-я, .]", "", raw_text)
+        self.raw_text_ru = re.sub("[^а-я, .\n]", "", raw_text)
         self.chars = sorted(list(set(self.raw_text_ru)))
         self.n_chars = len(raw_text)
         self.n_vocab = len(self.chars)
@@ -52,7 +38,7 @@ class CharRNN:
         self.validation_set = self.raw_text_ru[int(len(self.raw_text_ru) * self.VALIDATION_SPLIT_GEN):]
         self.raw_text_ru = self.raw_text_ru[:int(len(self.raw_text_ru) * self.VALIDATION_SPLIT_GEN)]
 
-        with open('data/Lev_Tolstoy_val.txt', 'w') as file:
+        with open('data/chehov_val.txt', 'w') as file:
             file.write(self.validation_set)
 
         print('Corpus train length: ', len(self.raw_text_ru))
@@ -115,7 +101,7 @@ class CharRNN:
         self.model.compile(loss='categorical_crossentropy', optimizer=rmsprop)
 
         model_json = self.model.to_json()
-        with open('models_tolstoy/current_model.json', 'w') as json_file:
+        with open('models_chehov/current_model.json', 'w') as json_file:
             json_file.write(model_json)
 
         return self.model
@@ -125,7 +111,7 @@ class CharRNN:
             self.epoch = from_epoch
 
         for iteration in range(0, 10000):
-            filepath = "models_tolstoy/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % (iteration + self.epoch)
+            filepath = "models_chehov/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % (iteration + self.epoch)
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=2, min_lr=0.0001)
             # logger_ = NBatchLogger(display=1000)
@@ -198,7 +184,7 @@ class CharRNN:
             val_gen = self.generate_arrays_from_data(train=False)
             val_samples, _ = next(val_gen)
 
-            filepath = "models_tolstoy/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % epoch
+            filepath = "models_chehov/weights_ep_%s_loss_{loss:.3f}_val_loss_{val_loss:.3f}.hdf5" % epoch
             checkpoint = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=False, mode='min')
             reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.8, patience=1, min_lr=0.0001)
 
@@ -207,11 +193,9 @@ class CharRNN:
                                      samples_per_epoch=samples,
                                      nb_epoch=1, max_q_size=10,
                                      callbacks=[checkpoint, reduce_lr], verbose=1)
-            self.model.reset_states()
 
 
-rnn_trainer = CharRNN('data/Lev_Tolstoy_all.txt', generator_training_type=True)
-
+rnn_trainer = CharRNN('data/chehov.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
     rnn_trainer.build_model(previous_save=None)
@@ -222,7 +206,7 @@ else:
     rnn_trainer.vectorization()
     rnn_trainer.build_model(previous_save=None)
     print(rnn_trainer.model.summary())
-    rnn_trainer.train_model(from_epoch=10)
+    rnn_trainer.train_model(from_epoch=0)
 
 
 
