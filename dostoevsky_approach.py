@@ -7,32 +7,18 @@ from keras.callbacks import ModelCheckpoint, ReduceLROnPlateau, Callback
 from keras.optimizers import RMSprop
 
 
-class NBatchLogger(Callback):
-
-    def __init__(self, display):
-        self.seen = 0
-        self.display = display
-
-    def on_batch_end(self, batch, logs={}):
-        self.seen += logs.get('size', 0)
-        if self.seen % self.display == 0:
-            # you can access loss, accuracy in self.params['metrics']
-            # print('\n{}/{} - loss ....\n'.format(self.seen, self.params['nb_sample']))
-            print('\n Batch Loss: {0}'.format(self.params['metrics']))
-
-
 class CharRNN:
 
     # global params
-    MAXLEN = 20
+    MAXLEN = 40
     STEP = 1
-    BATCH_SIZE = 1000
+    BATCH_SIZE = 128
 
     VALIDATION_SPLIT_GEN = 0.95
     GENERATOR_TRAINING = True
 
     # model params
-    neuron_layers = [400, 400, 300]
+    neuron_layers = [512, 512, 400]
     dropout_layers = [0.4, 0.4]
     # dense_layers = [320]
 
@@ -209,7 +195,7 @@ class CharRNN:
                                      callbacks=[checkpoint, reduce_lr], verbose=1)
 
 
-rnn_trainer = CharRNN('data/dost_best.txt', generator_training_type=True)
+rnn_trainer = CharRNN('data/dost_best2.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
     rnn_trainer.build_model(previous_save=None)

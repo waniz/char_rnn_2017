@@ -10,16 +10,16 @@ from keras.optimizers import RMSprop
 class CharRNN:
 
     # global params
-    MAXLEN = 20
+    MAXLEN = 30
     STEP = 1
-    BATCH_SIZE = 1000
+    BATCH_SIZE = 128
 
     VALIDATION_SPLIT_GEN = 0.95
     GENERATOR_TRAINING = True
 
     # model params
     neuron_layers = [320, 320, 320]
-    dropout_layers = [0.4, 0.4]
+    dropout_layers = [0.5, 0.5]
     # dense_layers = [320]
 
     def __init__(self, file_, generator_training_type=False):
