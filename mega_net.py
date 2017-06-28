@@ -97,7 +97,7 @@ class CharRNN:
         if previous_save:
             self.model.load_weights(previous_save)
 
-        rmsprop = RMSprop(lr=0.0001)  # lr=0.001 till 25- epochs
+        rmsprop = RMSprop(lr=0.00005)  # lr=0.001 till 25- epochs
         self.model.compile(loss='categorical_crossentropy', optimizer=rmsprop)
 
         model_json = self.model.to_json()
@@ -198,9 +198,9 @@ class CharRNN:
 rnn_trainer = CharRNN('data/mega_sample.txt', generator_training_type=True)
 
 if rnn_trainer.GENERATOR_TRAINING:
-    rnn_trainer.build_model(previous_save='models_mega/weights_ep_3_loss_1.278_val_loss_1.302.hdf5')
+    rnn_trainer.build_model(previous_save='models_mega/weights_ep_4_loss_1.273_val_loss_1.291.hdf5')
     print(rnn_trainer.model.summary())
-    rnn_trainer.train_model_generator(from_epoch=3)
+    rnn_trainer.train_model_generator(from_epoch=4)
 else:
     rnn_trainer.get_sentences()
     rnn_trainer.vectorization()
